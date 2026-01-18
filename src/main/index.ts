@@ -1,10 +1,14 @@
 import 'dotenv/config'
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { initMain } from 'electron-audio-loopback'
 import icon from '../../resources/icon.png?asset'
 import { fileSystemService } from './services/fileSystem'
 import { audioCaptureService } from './services/audioCapture'
 import { assemblyAIService } from './services/assemblyai'
+
+// Initialize electron-audio-loopback
+initMain()
 
 let mainWindow: BrowserWindow | null = null
 
@@ -158,6 +162,8 @@ function registerIPCHandlers(): void {
         confidence: transcript.confidence,
         timestamp: new Date().toISOString(),
         duration: transcript.audio_duration,
+        utterances: transcript.utterances,
+        words: transcript.words,
         savedPath
       })
     } catch (error: any) {

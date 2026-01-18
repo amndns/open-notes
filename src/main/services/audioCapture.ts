@@ -1,22 +1,32 @@
-import { getLoopbackAudioMediaStream } from 'electron-audio-loopback'
-
 export class AudioCaptureService {
   /**
-   * Gets the system audio source using electron-audio-loopback
-   * This captures audio playing from the system (speakers/headphones output)
+   * Validates that system audio capture is available
+   * The actual MediaStream is obtained in the renderer process via getLoopbackAudioMediaStream()
+   * This method just performs validation checks
    */
   async getSystemAudioSource(): Promise<void> {
-    try {
-      // electron-audio-loopback requires calling this in the main process
-      // It sets up the necessary Chromium flags for loopback audio
-      await getLoopbackAudioMediaStream()
-    } catch (error: any) {
-      console.error('Failed to get system audio source:', error)
-      throw new Error(
-        `System audio capture not available: ${error.message}. ` +
-          'Make sure you are running macOS 12.3+ and Electron 31.0.1+'
-      )
+    // electron-audio-loopback's initMain() must be called before this
+    // The actual MediaStream will be obtained in the renderer/preload
+    // This is just a validation/acknowledgment handler
+    
+    // Check platform requirements
+    if (process.platform === 'darwin') {
+      const version = process.getSystemVersion()
+      const [major, minor] = version.split('.').map(Number)
+      
+      if (major < 12 || (major === 12 && minor < 3)) {
+        throw new Error(
+          'System audio capture requires macOS 12.3 or later. ' +
+          `Current version: ${version}`
+        )
+      }
+      
+      console.log('✓ macOS version compatible:', version)
+      console.log('ℹ️ A screen sharing picker will appear when you start recording')
     }
+    
+    // If we get here, the system should support loopback audio
+    // The actual capture happens in renderer via getLoopbackAudioMediaStream()
   }
 }
 

@@ -1,5 +1,23 @@
 export type AppStatus = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DISPLAYING' | 'ERROR'
 
+export interface Word {
+  text: string
+  start: number
+  end: number
+  confidence: number
+  speaker: string
+  channel?: string
+}
+
+export interface Utterance {
+  speaker: string
+  text: string
+  confidence: number
+  start: number
+  end: number
+  words?: Word[]
+}
+
 export interface Transcript {
   id: string
   text: string
@@ -7,8 +25,8 @@ export interface Transcript {
   duration: number
   confidence: number
   savedPath?: string
-  words?: any[]
-  utterances?: any[]
+  words?: Word[]
+  utterances?: Utterance[]
 }
 
 export interface ErrorInfo {

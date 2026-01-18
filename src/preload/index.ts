@@ -6,11 +6,35 @@ import { getLoopbackAudioMediaStream } from 'electron-audio-loopback'
 const api = {
   // Audio capture - get system audio source
   getSystemAudioSource: async (): Promise<MediaStream> => {
-    // First, call main process to set up electron-audio-loopback
-    await ipcRenderer.invoke('get-system-audio-source')
+    try {
+      // Validate system requirements first
+      await ipcRenderer.invoke('get-system-audio-source')
 
-    // Then get the actual MediaStream in the renderer
-    return await getLoopbackAudioMediaStream()
+      // getLoopbackAudioMediaStream does everything:
+      // 1. Calls enable-loopback-audio IPC (sets up handler)
+      // 2. Calls getDisplayMedia (shows native picker)
+      // 3. Removes video tracks
+      // 4. Calls disable-loopback-audio IPC (cleanup)
+      console.log('Getting loopback audio stream (will show macOS picker)...')
+      const stream = await getLoopbackAudioMediaStream()
+      
+      console.log('✓ Got system audio stream:', {
+        audioTracks: stream.getAudioTracks().length,
+        id: stream.id
+      })
+      
+      if (stream.getAudioTracks().length === 0) {
+        throw new Error('No audio tracks. Make sure to check "Share audio" in the picker dialog.')
+      }
+      
+      return stream
+    } catch (error: any) {
+      console.error('❌ System audio error:', error)
+      if (error.message?.includes('denied') || error.message?.includes('Permission')) {
+        throw new Error('Screen recording permission denied. Please allow in System Settings.')
+      }
+      throw error
+    }
   },
 
   // File operations

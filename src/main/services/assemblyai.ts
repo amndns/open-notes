@@ -47,7 +47,13 @@ export class AssemblyAIService {
 
     try {
       const transcript = await this.client.transcripts.create({
-        audio_url: audioUrl
+        audio_url: audioUrl,
+        multichannel: true,
+        speaker_labels: true,
+        speaker_options: {
+          min_speakers_expected: 2,
+          max_speakers_expected: 6 // User + up to 5 call participants
+        }
       })
 
       return transcript.id

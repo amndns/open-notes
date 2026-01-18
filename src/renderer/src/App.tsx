@@ -6,7 +6,8 @@ import RecordingTimer from './components/RecordingTimer'
 import ProcessingIndicator from './components/ProcessingIndicator'
 import TranscriptDisplay from './components/TranscriptDisplay'
 import ErrorDisplay from './components/ErrorDisplay'
-import { Mic } from 'lucide-react'
+import { Mic, Plus } from 'lucide-react'
+import { Button } from './components/ui/button'
 
 function EmptyState({
   status
@@ -63,7 +64,7 @@ function EmptyState({
 }
 
 function AppContent() {
-  const { state } = useAppContext()
+  const { state, dispatch } = useAppContext()
   const { startRecording, stopRecording, isRecording } = useRecording()
   useTranscription()
 
@@ -84,11 +85,7 @@ function AppContent() {
         </div>
       )}
 
-      {state.status === 'PROCESSING' && (
-        <div className="flex flex-1 flex-col">
-          <ProcessingIndicator progress={state.progress} message={state.message} />
-        </div>
-      )}
+      {state.status === 'PROCESSING' && <ProcessingIndicator progress={state.progress} message={state.message} />}
 
       {state.status === 'DISPLAYING' && <TranscriptDisplay transcript={state.transcript} />}
 
@@ -96,11 +93,18 @@ function AppContent() {
 
       {/* Bottom control panel */}
       <div className="flex items-center justify-center gap-4 border-t border-gray-200 bg-gray-50 px-6 py-4">
-        <RecordingButton
-          isRecording={isRecording}
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={state.status === 'PROCESSING'}
-        />
+        {state.status === 'DISPLAYING' ? (
+          <Button onClick={() => dispatch({ type: 'RESET' })} size="lg" className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Recording
+          </Button>
+        ) : (
+          <RecordingButton
+            isRecording={isRecording}
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={state.status === 'PROCESSING'}
+          />
+        )}
       </div>
     </div>
   )

@@ -28,10 +28,33 @@ export class AudioCaptureService {
     // Try to get system audio stream (non-blocking)
     try {
       this.systemStream = await window.api.getSystemAudioSource()
+      
+      // Validate that we got a proper MediaStream
+      if (!this.systemStream || !(this.systemStream instanceof MediaStream)) {
+        console.warn('⚠️ Invalid MediaStream returned:', this.systemStream)
+        throw new Error('Invalid MediaStream object returned from system audio capture')
+      }
+      
+      // Ensure it has audio tracks
+      const audioTracks = this.systemStream.getAudioTracks()
+      if (audioTracks.length === 0) {
+        console.warn('⚠️ System audio stream has no audio tracks')
+        throw new Error(
+          'No audio tracks found. When selecting what to share, make sure to check "Share audio" in the dialog.'
+        )
+      }
+      
       hasSystemAudio = true
-      console.log('✓ System audio access granted')
-    } catch (error) {
-      console.warn('⚠️ System audio not available:', error)
+      console.log('✓ System audio access granted', { tracks: audioTracks.length })
+    } catch (error: any) {
+      // Provide helpful error messages
+      if (error.name === 'NotAllowedError') {
+        console.warn('⚠️ User denied screen recording permission')
+      } else if (error.name === 'AbortError') {
+        console.warn('⚠️ User cancelled the screen sharing dialog')
+      } else {
+        console.warn('⚠️ System audio not available:', error)
+      }
       this.systemStream = null
     }
 
