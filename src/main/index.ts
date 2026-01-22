@@ -6,6 +6,7 @@ import icon from '../../resources/icon.png?asset'
 import { fileSystemService } from './services/fileSystem'
 import { audioCaptureService } from './services/audioCapture'
 import { assemblyAIService } from './services/assemblyai'
+import { geminiService } from './services/gemini'
 
 // Initialize electron-audio-loopback
 initMain()
@@ -155,8 +156,8 @@ function registerIPCHandlers(): void {
       // Cleanup temp audio file
       await fileSystemService.cleanupTempFile(filePath)
 
-      // Send completion event
-      mainWindow?.webContents.send('transcription-complete', {
+      // Prepare base transcript data
+      const transcriptData = {
         id: transcript.id,
         text: transcript.text,
         confidence: transcript.confidence,
@@ -165,7 +166,38 @@ function registerIPCHandlers(): void {
         utterances: transcript.utterances,
         words: transcript.words,
         savedPath
-      })
+      }
+
+      // Summarization step - always attempt
+      mainWindow?.webContents.send('transcription-progress', 95)
+
+      try {
+        console.log('Starting summarization...')
+        const summary = await geminiService.summarizeTranscript({
+          id: transcript.id,
+          text: transcript.text,
+          duration: transcript.audio_duration,
+          utterances: transcript.utterances
+        })
+
+        // Save summary to separate file
+        const summaryPath = await fileSystemService.saveSummary(summary, savedPath)
+        summary.savedPath = summaryPath
+        console.log('Summary saved to:', summaryPath)
+
+        // Send completion with summary
+        mainWindow?.webContents.send('transcription-complete', {
+          ...transcriptData,
+          summary
+        })
+      } catch (error: any) {
+        console.error('Summarization failed:', error.message)
+        // Send transcript with error info so UI can display it
+        mainWindow?.webContents.send('transcription-complete', {
+          ...transcriptData,
+          summaryError: error.message || 'Failed to generate summary'
+        })
+      }
     } catch (error: any) {
       console.error('Transcription error:', error)
       mainWindow?.webContents.send('transcription-error', {

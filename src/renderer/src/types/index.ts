@@ -18,6 +18,18 @@ export interface Utterance {
   words?: Word[]
 }
 
+export interface Summary {
+  id: string
+  transcriptId: string
+  context: string
+  participants: string[]
+  keyPoints: string[]
+  actionItems: string[]
+  summary: string
+  generatedAt: string
+  savedPath?: string
+}
+
 export interface Transcript {
   id: string
   text: string
@@ -27,6 +39,8 @@ export interface Transcript {
   savedPath?: string
   words?: Word[]
   utterances?: Utterance[]
+  summary?: Summary
+  summaryError?: string
 }
 
 export interface ErrorInfo {

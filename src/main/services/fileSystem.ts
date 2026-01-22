@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import os from 'os'
+import type { Summary } from '../types/summary'
 
 export class FileSystemService {
   private openNotesDir: string
@@ -69,6 +70,68 @@ export class FileSystemService {
    */
   getOpenNotesDir(): string {
     return this.openNotesDir
+  }
+
+  /**
+   * Saves summary to the OpenNotes directory as Markdown
+   * Uses same timestamp prefix as related transcript for easy pairing
+   */
+  async saveSummary(summary: Summary, transcriptPath: string): Promise<string> {
+    await this.ensureOpenNotesDir()
+
+    // Extract timestamp from transcript path to pair files
+    const transcriptFilename = path.basename(transcriptPath)
+    const timestamp = transcriptFilename.replace('-transcript.json', '')
+
+    const filename = `${timestamp}-summary.md`
+    const filePath = path.join(this.openNotesDir, filename)
+
+    const markdown = this.formatSummaryAsMarkdown(summary)
+    await fs.writeFile(filePath, markdown, 'utf-8')
+
+    return filePath
+  }
+
+  private formatSummaryAsMarkdown(summary: Summary): string {
+    const participantsList =
+      summary.participants.length > 0
+        ? summary.participants.map((p) => `- ${p}`).join('\n')
+        : '_Not identified_'
+
+    const keyPointsList =
+      summary.keyPoints.length > 0
+        ? summary.keyPoints.map((p) => `- ${p}`).join('\n')
+        : '_None identified_'
+
+    const actionItemsList =
+      summary.actionItems.length > 0
+        ? summary.actionItems.map((a) => `- [ ] ${a}`).join('\n')
+        : '_No action items_'
+
+    return `# Meeting Summary
+
+**Generated:** ${new Date(summary.generatedAt).toLocaleString()}
+
+## Context
+
+${summary.context}
+
+## Participants
+
+${participantsList}
+
+## Key Points
+
+${keyPointsList}
+
+## Action Items
+
+${actionItemsList}
+
+## Summary
+
+${summary.summary}
+`
   }
 }
 

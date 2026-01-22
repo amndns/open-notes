@@ -10,6 +10,19 @@ export function useRecording() {
 
   const startRecording = async () => {
     try {
+      // Set up audio interruption handler before starting
+      audioService.current.setOnAudioInterrupted((source) => {
+        const sourceLabel = source === 'mic' ? 'Microphone' : 'System audio'
+        dispatch({
+          type: 'ERROR',
+          error: {
+            type: 'RUNTIME',
+            message: `${sourceLabel} was interrupted. Your recording may be incomplete.`,
+            details: { source, reason: 'Audio track ended unexpectedly' }
+          }
+        })
+      })
+
       const { hasMic, hasSystemAudio } = await audioService.current.startRecording()
 
       // Store which sources are active

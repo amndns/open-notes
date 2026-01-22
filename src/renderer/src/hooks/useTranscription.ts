@@ -9,9 +9,10 @@ export function useTranscription() {
       let message = 'Processing...'
       if (percent < 30) message = 'Uploading audio...'
       else if (percent < 90) message = 'Transcribing...'
-      else message = 'Finalizing...'
+      else if (percent < 95) message = 'Saving transcript...'
+      else message = 'Generating summary...'
 
-      dispatch({ type: 'UPDATE_PROGRESS', progress: percent, message })
+      dispatch({ type: 'UPDATE_PROGRESS', progress: Math.min(percent, 100), message })
     }
 
     const handleComplete = (transcript: any) => {

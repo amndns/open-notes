@@ -4,6 +4,11 @@ export class AudioCaptureService {
   private audioChunks: Blob[] = []
   private micStream: MediaStream | null = null
   private systemStream: MediaStream | null = null
+  private onAudioInterrupted: ((source: 'mic' | 'system') => void) | null = null
+
+  setOnAudioInterrupted(callback: (source: 'mic' | 'system') => void): void {
+    this.onAudioInterrupted = callback
+  }
 
   async startRecording(): Promise<{ hasMic: boolean; hasSystemAudio: boolean }> {
     let hasMic = false
@@ -20,6 +25,16 @@ export class AudioCaptureService {
       })
       hasMic = true
       console.log('✓ Microphone access granted')
+
+      // Monitor mic tracks for unexpected termination
+      this.micStream.getAudioTracks().forEach((track) => {
+        track.onended = () => {
+          if (this.mediaRecorder?.state === 'recording') {
+            console.error('🎤 Microphone track ended unexpectedly')
+            this.onAudioInterrupted?.('mic')
+          }
+        }
+      })
     } catch (error) {
       console.warn('⚠️ Microphone not available:', error)
       this.micStream = null
@@ -46,6 +61,16 @@ export class AudioCaptureService {
       
       hasSystemAudio = true
       console.log('✓ System audio access granted', { tracks: audioTracks.length })
+
+      // Monitor system audio tracks for unexpected termination
+      audioTracks.forEach((track) => {
+        track.onended = () => {
+          if (this.mediaRecorder?.state === 'recording') {
+            console.error('🔊 System audio track ended unexpectedly')
+            this.onAudioInterrupted?.('system')
+          }
+        }
+      })
     } catch (error: any) {
       // Provide helpful error messages
       if (error.name === 'NotAllowedError') {
